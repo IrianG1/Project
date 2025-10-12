@@ -3,6 +3,8 @@ from tkinter import messagebox
 from PIL import Image, ImageTk
 import random
 
+import os
+
 # Configuración
 #tamaño de cada carta
 ANCHO_BOTON = 80
@@ -31,8 +33,14 @@ def iniciar_juego(dificultad):
     # Carga imágenes y crea parejas
     parejas = []
     nombres = []
+    bloqueo = [False]
+
     for i in imagenes:
-        img = Image.open(i).resize((ANCHO_BOTON, ALTO_BOTON)) #abre la imagen y redimensiona
+        
+        #img = Image.open(i).resize((ANCHO_BOTON, ALTO_BOTON)) #abre la imagen y redimensiona
+
+        BASE_DIR = os.path.dirname(__file__)
+        img = Image.open(os.path.join(BASE_DIR, i)).resize((ANCHO_BOTON, ALTO_BOTON))
         img_tk1 = ImageTk.PhotoImage(img) #convierte la imagen en un label o botón 
         img_tk2 = ImageTk.PhotoImage(img)  # copia para que pueda aparecer dos veces
         parejas.append(img_tk1) #agrega a la lista la imagen ya convertida en label
@@ -46,7 +54,11 @@ def iniciar_juego(dificultad):
     parejas, nombres = zip(*temp) #para trabajar nuevamente con dos listas paralelas, como las que necesitás para colocar imágenes y nombres en la matriz
 
     # Imagen de fondo
-    fondo = Image.open("fondo.png").resize((ANCHO_BOTON, ALTO_BOTON)) #imagen de fondo al ser volteada la carta
+
+    #fondo = Image.open("fondo.png").resize((ANCHO_BOTON, ALTO_BOTON)) #imagen de fondo al ser volteada la carta
+    
+    fondo = Image.open(os.path.join(BASE_DIR, "fondo.png")).resize((ANCHO_BOTON, ALTO_BOTON))
+
     fondo_tk = ImageTk.PhotoImage(fondo) #convierte la imagen en un label o botón 
 
     primer_click = [None]
@@ -56,6 +68,8 @@ def iniciar_juego(dificultad):
     #Por ejemplo: después de hacer clic en la fila 0, columna 2, se verá: primer_click[0] = (0, 2)
     segundo_click = [None]
     puntaje = [0]
+    intentos = [0] 
+    encontradas = [0]
 
     # -------------------------------
     # Crear matriz 
@@ -97,10 +111,62 @@ def iniciar_juego(dificultad):
 
     juego.after(tiempo_memoria, voltear_todas) #luego de tiempo_memoria, voltea las cartas
 
+    # Temporizador 
+    tiempos_limite = {"Fácil": 50, "Medio": 40, "Difícil": 30}
+    tiempo_restante = [tiempos_limite[dificultad]]
+
+    # Contenedor del temporizador (barra superior)
+    frame_tiempo = tk.Frame(juego, bg="#222222")
+    frame_tiempo.pack(fill="x", pady=(10, 0))
+
+    # Texto del temporizador
+    label_tiempo = tk.Label(
+        frame_tiempo,
+        text=f"⏳ Tiempo restante: {tiempo_restante[0]} s",
+        font=("Consolas", 18, "bold"),
+        fg="#00FF00",  # verde al inicio
+        bg="#222222"
+    )
+    label_tiempo.pack(pady=5)
+
+    # Función de actualización
+    def actualizar_tiempo():
+        if not juego.winfo_exists():
+            return
+        if tiempo_restante[0] > 0:
+            tiempo_restante[0] -= 1
+
+            # Cambia el color según el tiempo restante
+            if tiempo_restante[0] > 20:
+                color = "#00FF00" 
+            elif tiempo_restante[0] > 10:
+                color = "#FFD700"
+            else:
+                color = "#FF3333"
+
+            label_tiempo.config(
+                text=f"⏳ Tiempo restante: {tiempo_restante[0]} s",
+                fg=color
+            )
+
+            juego.after(1000, actualizar_tiempo)
+        else:
+            # Cuando se acaba el tiempo, termina el juego
+            messagebox.showinfo("Tiempo agotado", "¡Se acabó el tiempo!")
+            finalizar_juego()
+
+    # Iniciar el contador justo después de voltear las cartas
+    def iniciar_temporizador():
+        actualizar_tiempo()
+
+    juego.after(tiempo_memoria, iniciar_temporizador)
+
     # -------------------------------
     # Manejo de clicks
     def check_click(i, j):
-        if not juego.winfo_exists():##verifica si la ventana del juego todavía existe
+        if not juego.winfo_exists():#verifica si la ventana del juego todavía existe
+            return
+        if bloqueo[0]: #Evita que se abra una nueva carta mientras se está comparando las otras dos
             return
         lbl = labels[i][j]
         if lbl.revelado:
@@ -113,6 +179,7 @@ def iniciar_juego(dificultad):
             primer_click[0] = (i, j) #Si no hay primer clic, guarda las coordenadas de la carta que se acaba de clicar
         else: #Si ya hay un primer_click, entonces esta carta es la segunda que el jugador selecciona.
             segundo_click[0] = (i, j)
+            bloqueo[0] = True #Bloquea al jugador de seleccionar más cartas mientras se comparan
             juego.after(500, verificar_pareja) #Espera 500 ms (medio segundo) y luego llama a la función verificar_pareja.
 
     def verificar_pareja():
@@ -124,21 +191,28 @@ def iniciar_juego(dificultad):
         i1, j1 = primer_click[0] #separa las coordenadas
         i2, j2 = segundo_click[0]
 
+        intentos[0] += 1
+
         # Comparar por nombre de archivo
         if labels[i1][j1].nombre_imagen == labels[i2][j2].nombre_imagen:
-            puntaje[0] += 1
+            encontradas[0] +=1
+            #Solo cuenta los puntos de los primeros 18 intentos:
+            if intentos [0] <= 18:
+                puntaje[0] += 1
+            
         else:
             labels[i1][j1].config(image=fondo_tk) #si las cartas no coinciden, cambia la primera carta de nuevo a la imagen de fondo,
             labels[i2][j2].config(image=fondo_tk)
             labels[i1][j1].revelado = False
             labels[i2][j2].revelado = False
-            puntaje[0] -= 1
 
         primer_click[0] = None
         segundo_click[0] = None
+        bloqueo[0] = False
 
-        if puntaje[0] == TOTAL_PAREJAS:
-            finalizar_juego()
+        if encontradas[0] == TOTAL_PAREJAS:
+            bloqueo[0] = True
+            juego.after(300, finalizar_juego)
 
     # -------------------------------
     def finalizar_juego():
@@ -151,12 +225,31 @@ def iniciar_juego(dificultad):
         else:
             msg = "Sobresaliente"
 
-        respuesta = messagebox.askyesno("Fin del juego",
-                                        f"Puntaje: {puntaje[0]}\n{msg}\n\n¿Deseas jugar otra ronda?") 
-        if juego.winfo_exists():
-            juego.destroy() #cierra la ventana para preparar una nueva partida 
-        if respuesta:
-            iniciar_ventana_inicio()
+        juego.attributes("-disabled", True)
+
+        final = tk.Toplevel()
+        final.title("Fin del juego")
+        final.geometry("400x400")
+        final.configure(bg = "#222222")
+
+        final.transient(juego) #Para asegurarse de que la ventana se genere sobre el juego previo
+        final.grab_set() #Para dirigir todas las acciones hacia esta ventana
+
+        tk.Label(final, text = "Juego Terminado!", font=("Arial", 24, "bold"), fg="#FF7518", bg="#222222").pack(pady = 20)
+        tk.Label(final, text = f"Puntaje: {puntaje[0]}", font = ("Arial", 16), fg = "white", bg = "#222222").pack(pady = 5)
+        tk.Label(final, text = f"Intentos: {intentos[0]}",font = ("Arial", 16), fg = "white", bg = "#222222").pack(pady = 5)
+        tk.Label(final, text = msg, font = ("Arial", 16, "italic"), fg = "#00FF00", bg = "#222222").pack(pady = 10)
+
+        tk.Button(final, text = "Jugar otra vez", font = ("Arial", 14), bg = "#28a745", fg = "white",
+                  command = lambda: [final.destroy(), juego.destroy(),iniciar_ventana_inicio()]).pack(pady = 10)
+        tk.Button(final, text = "Salir", font = ("Arial", 14), bg = "#FF0000", fg = "white",
+                  command = lambda: [final.destroy(), juego.destroy()]).pack(pady = 10)
+
+        def closing():
+            juego.attributes("-disabled", False)
+            final.destroy()
+
+        final.protocol("WM_DELETE_WINDOW", closing)
 
     # Asociar clicks
     for i in range(FILAS):
