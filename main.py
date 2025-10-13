@@ -5,6 +5,15 @@ import random
 
 import os
 
+import pygame
+
+pygame.mixer.init()
+
+def reproducir_musica(ruta, volumen=0.5):
+    pygame.mixer.music.load(ruta)
+    pygame.mixer.music.set_volume(volumen)
+    pygame.mixer.music.play(-1)  # -1 = en bucle
+
 # Configuración
 #tamaño de cada carta
 ANCHO_BOTON = 80
@@ -13,9 +22,9 @@ FILAS, COLUMNAS = 6, 6 #cartas en el tablero
 TOTAL_PAREJAS = (FILAS * COLUMNAS) // 2 #formar parejas
 
 imagenes = [
-    "1.jpg", "2.png", "3.png", "4.png", "5.png", "6.png", "7.png",
-    "8.png", "9.png", "10.png", "11.png", "12.png", "13.png", "14.png",
-    "16.png", "17.png", "teus.png", "15.jpg"
+    "Imagenes/1.jpg", "Imagenes/2.jpg", "Imagenes/3.jpg", "Imagenes/4.jpg", "Imagenes/5.jpg", "Imagenes/6.jpg", "Imagenes/7.jpg",
+    "Imagenes/8.jpg", "Imagenes/9.jpg", "Imagenes/10.png", "Imagenes/11.jpg", "Imagenes/12.jpg", "Imagenes/13.jpg", "Imagenes/14.jpg",
+    "Imagenes/16.jpg", "Imagenes/17.jpg", "Imagenes/teus.jpg", "Imagenes/15.jpg"
 ]
 
 # -------------------------------
@@ -57,7 +66,7 @@ def iniciar_juego(dificultad):
 
     #fondo = Image.open("fondo.png").resize((ANCHO_BOTON, ALTO_BOTON)) #imagen de fondo al ser volteada la carta
     
-    fondo = Image.open(os.path.join(BASE_DIR, "fondo.png")).resize((ANCHO_BOTON, ALTO_BOTON))
+    fondo = Image.open(os.path.join(BASE_DIR, "Imagenes/fondo.png")).resize((ANCHO_BOTON, ALTO_BOTON))
 
     fondo_tk = ImageTk.PhotoImage(fondo) #convierte la imagen en un label o botón 
 
@@ -225,9 +234,7 @@ def iniciar_juego(dificultad):
         else:
             msg = "Sobresaliente"
 
-        juego.attributes("-disabled", True)
-
-        final = tk.Toplevel()
+        final = tk.Toplevel(juego)
         final.title("Fin del juego")
         final.geometry("400x400")
         final.configure(bg = "#222222")
@@ -264,22 +271,56 @@ def iniciar_juego(dificultad):
 
 # -------------------------------
 def iniciar_ventana_inicio():
+    reproducir_musica("Imagenes/musica.mp3")
     root = tk.Tk()
-    root.title("Memoria de Halloween")
     root.geometry("700x500")
-    root.resizable(True, True)
-    root.configure(bg="#222222")
 
-    titulo = tk.Label(root, text=" MEMORAMA 👻",
-                      font=("Arial", 24, "bold"), fg="#FF7518", bg="#222222")
-    titulo.pack(pady=50)
+    # Crear canvas
+    canvas = tk.Canvas(root, width=700, height=500)
+    canvas.pack(fill="both", expand=True)
 
-    tk.Button(root, text="Fácil", font=("Arial", 16), width=20,
-              bg="#28a745", fg="white", command=lambda: [root.destroy(), iniciar_juego("Fácil")]).pack(pady=10)
-    tk.Button(root, text="Medio", font=("Arial", 16), width=20,
-              bg="#ffc107", fg="white", command=lambda: [root.destroy(), iniciar_juego("Medio")]).pack(pady=10)
-    tk.Button(root, text="Difícil", font=("Arial", 16), width=20,
-              bg="#dc3545", fg="white", command=lambda: [root.destroy(), iniciar_juego("Difícil")]).pack(pady=10)
+    # --- Fondo ---
+    fondo_img = Image.open("Imagenes/3.png").resize((700, 500))
+    fondo_tk = ImageTk.PhotoImage(fondo_img)
+    canvas.create_image(0, 0, image=fondo_tk, anchor="nw")
+
+    # --- Botones ---
+    img_facil = Image.open("Imagenes/facil.png").resize((200, 50))
+    img_normal = Image.open("Imagenes/normal.png").resize((200, 50))
+    img_dificil = Image.open("Imagenes/dificil.png").resize((200, 50))
+
+    btn_img = ImageTk.PhotoImage(img_facil)
+    btn_img1 = ImageTk.PhotoImage(img_normal)
+    btn_img2 = ImageTk.PhotoImage(img_dificil)
+
+    # Guardar referencias para que no se borren
+    canvas.btn_imgs = [fondo_tk, btn_img, btn_img1, btn_img2]
+
+    # --- Funciones específicas ---
+    def jugar_facil(event=None):
+        print("Iniciar modo FÁCIL")
+        root.destroy()
+        iniciar_juego("Fácil")# aquí pondrías tu función para iniciar ese modo
+
+    def jugar_medio(event=None):
+        print("Iniciar modo NORMAL")
+        root.destroy()
+        iniciar_juego("Medio")
+
+    def jugar_dificil(event=None):
+        print("Iniciar modo DIFÍCIL")
+        root.destroy()
+        iniciar_juego("Difícil")
+
+    # --- Crear botones sobre el canvas ---
+    boton_facil = canvas.create_image(350, 290, image=btn_img)
+    boton_normal = canvas.create_image(350, 350, image=btn_img1)
+    boton_dificil = canvas.create_image(350, 410, image=btn_img2)
+
+    # --- Vincular eventos correctamente ---
+    canvas.tag_bind(boton_facil, "<Button-1>", jugar_facil)
+    canvas.tag_bind(boton_normal, "<Button-1>", jugar_medio)
+    canvas.tag_bind(boton_dificil, "<Button-1>", jugar_dificil)
 
     root.mainloop()
 
