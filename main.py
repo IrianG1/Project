@@ -24,7 +24,7 @@ TOTAL_PAREJAS = (FILAS * COLUMNAS) // 2 #formar parejas
 imagenes = [
     "Imagenes/1.jpg", "Imagenes/2.jpg", "Imagenes/3.jpg", "Imagenes/4.jpg", "Imagenes/5.jpg", "Imagenes/6.jpg", "Imagenes/7.jpg",
     "Imagenes/8.jpg", "Imagenes/9.jpg", "Imagenes/10.png", "Imagenes/11.jpg", "Imagenes/12.jpg", "Imagenes/13.jpg", "Imagenes/14.jpg",
-    "Imagenes/16.jpg", "Imagenes/17.jpg", "Imagenes/teus.jpg", "Imagenes/15.jpg"
+    "Imagenes/16.jpg", "Imagenes/17.jpg", "Imagenes/18.jpg", "Imagenes/15.jpg"
 ]
 
 # -------------------------------
