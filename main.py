@@ -81,6 +81,68 @@ def iniciar_juego(dificultad):
     encontradas = [0]
 
     # -------------------------------
+    # --- FUNCIONES DE ANIMACIÓN ---
+    # -------------------------------
+    def animacion_aparicion(widget, delay=0):
+        """Animación de aparición gradual"""
+        widget.place_forget() if hasattr(widget, 'place_info') and widget.place_info() else None
+        widget.pack_forget() if hasattr(widget, 'pack_info') and widget.pack_info() else None
+        widget.grid_forget() if hasattr(widget, 'grid_info') and widget.grid_info() else None
+        
+        widget.place(relx=0.5, rely=0.5, anchor='center')
+        widget.configure(alpha=0.0)
+        
+        def fade_in(alpha=0.0):
+            if alpha < 1.0:
+                alpha += 0.1
+                try:
+                    widget.configure(alpha=alpha)
+                    juego.after(30, lambda: fade_in(alpha))
+                except:
+                    pass
+        
+        juego.after(delay, fade_in)
+
+    def animacion_voltear(widget, nueva_imagen, es_revelado):
+        original_width = ANCHO_BOTON
+        steps = 10
+        
+        def animate_step(step):
+            if not juego.winfo_exists(): return
+            if step <= steps:
+                new_width = int(original_width * (1 - abs(step - steps / 2) / (steps / 2)))
+                if new_width < 1: new_width = 1
+                
+                if step == steps // 2:
+                    widget.config(image=nueva_imagen)
+                
+                # Usar place para controlar el tamaño sin afectar el grid
+                widget.place(in_=widget.master, anchor="center", relx=.5, rely=.5, width=new_width)
+                
+                juego.after(15, lambda: animate_step(step+1))
+            else:
+                widget.place(in_=widget.master, anchor="center", relx=.5, rely=.5, width=original_width, height=ALTO_BOTON)
+                widget.revelado = es_revelado
+        
+        animate_step(0)
+
+    def animacion_acierto(widget1, widget2):
+        widget1.master.config(bg="#FFD700") # Color dorado para acierto
+        widget2.master.config(bg="#FFD700")
+
+    def animacion_error(widget1, widget2):
+        original_color = "#444444"
+        widget1.master.config(bg="#DC3545") # Color rojo para error
+        widget2.master.config(bg="#DC3545")
+        
+        def restaurar_color():
+            if juego.winfo_exists():
+                widget1.master.config(bg=original_color)
+                widget2.master.config(bg=original_color)
+
+        juego.after(600, restaurar_color)
+
+    # -------------------------------
     # Crear matriz 
     labels = [] #matriz que guardará todos los Labels del tablero
     idx = 0 #variable para recorrer los labels 
@@ -109,16 +171,21 @@ def iniciar_juego(dificultad):
 
     # -------------------------------
     # Voltear todas las imágenes a fondo.png después del tiempo
-    def voltear_todas():
-        if not juego.winfo_exists(): #verifica si la ventana del juego todavía existe
-            return
-        for i in range(FILAS):
-            for j in range(COLUMNAS):
-                lbl = labels[i][j] #selecciona la imagen
-                lbl.config(image=fondo_tk) #la cambia al fondo
-                lbl.revelado = False #oculta la carta
+    def voltear_todas_con_animacion():
+        if not juego.winfo_exists(): return
+        
+        def voltear_progresivo(idx=0):
+            if not juego.winfo_exists(): return
+            if idx < FILAS * COLUMNAS:
+                i = idx // COLUMNAS
+                j = idx % COLUMNAS
+                lbl = labels[i][j]
+                animacion_voltear(lbl, fondo_tk, False)
+                juego.after(30, lambda: voltear_progresivo(idx + 1))
+        
+        voltear_progresivo()
 
-    juego.after(tiempo_memoria, voltear_todas) #luego de tiempo_memoria, voltea las cartas
+    juego.after(tiempo_memoria, voltear_todas_con_animacion) #luego de tiempo_memoria, voltea las cartas
 
     # Temporizador 
     tiempos_limite = {"Fácil": 50, "Medio": 40, "Difícil": 30}
@@ -180,6 +247,8 @@ def iniciar_juego(dificultad):
         lbl = labels[i][j]
         if lbl.revelado:
             return
+        
+        animacion_voltear(lbl, lbl.imagen_real, True)
 
         lbl.config(image=lbl.imagen_real) #voltea la carta
         lbl.revelado = True
@@ -192,36 +261,40 @@ def iniciar_juego(dificultad):
             juego.after(500, verificar_pareja) #Espera 500 ms (medio segundo) y luego llama a la función verificar_pareja.
 
     def verificar_pareja():
-        if not juego.winfo_exists():
-            return
-        if primer_click[0] is None or segundo_click[0] is None: #comprueba si falta seleccionar una carta
+        if not juego.winfo_exists(): return
+        if primer_click[0] is None or segundo_click[0] is None:
+            bloqueo[0] = False
             return
 
-        i1, j1 = primer_click[0] #separa las coordenadas
+        i1, j1 = primer_click[0]
         i2, j2 = segundo_click[0]
+        lbl1 = labels[i1][j1]
+        lbl2 = labels[i2][j2]
 
         intentos[0] += 1
 
-        # Comparar por nombre de archivo
-        if labels[i1][j1].nombre_imagen == labels[i2][j2].nombre_imagen:
-            encontradas[0] +=1
-            #Solo cuenta los puntos de los primeros 18 intentos:
-            if intentos [0] <= 18:
+        if lbl1.nombre_imagen == lbl2.nombre_imagen:
+            encontradas[0] += 1
+            if intentos[0] <= 18:
                 puntaje[0] += 1
-            
+            animacion_acierto(lbl1, lbl2)
+            if encontradas[0] == TOTAL_PAREJAS:
+                bloqueo[0] = True
+                juego.after(5000, finalizar_juego)
         else:
-            labels[i1][j1].config(image=fondo_tk) #si las cartas no coinciden, cambia la primera carta de nuevo a la imagen de fondo,
-            labels[i2][j2].config(image=fondo_tk)
-            labels[i1][j1].revelado = False
-            labels[i2][j2].revelado = False
+            animacion_error(lbl1, lbl2)
+            # Esperar a que la animación de error sea visible antes de voltear
+            juego.after(600, lambda: [
+                animacion_voltear(lbl1, fondo_tk, False) if juego.winfo_exists() else None,
+                animacion_voltear(lbl2, fondo_tk, False) if juego.winfo_exists() else None
+            ])
 
         primer_click[0] = None
         segundo_click[0] = None
-        bloqueo[0] = False
+        
+        # Desbloquear después de que terminen las animaciones de volteo
+        juego.after(500, lambda: bloqueo.__setitem__(0, False) if juego.winfo_exists() else None)
 
-        if encontradas[0] == TOTAL_PAREJAS:
-            bloqueo[0] = True
-            juego.after(300, finalizar_juego)
 
     # -------------------------------
     def finalizar_juego():
@@ -271,9 +344,16 @@ def iniciar_juego(dificultad):
 
 # -------------------------------
 def iniciar_ventana_inicio():
-    reproducir_musica("Imagenes/musica.mp3")
+    reproducir_musica("Imagenes\musica.mp3")
     root = tk.Tk()
     root.geometry("700x500")
+
+    #Centrar Ventana
+    root.update_idletasks()
+    x = (root.winfo_screenwidth() // 2) - (700 // 2)
+    y = (root.winfo_screenheight() // 2) - (500 // 2)
+    root.geometry(f"700x500+{x}+{y}")
+
 
     # Crear canvas
     canvas = tk.Canvas(root, width=700, height=500)
