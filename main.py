@@ -344,7 +344,10 @@ def iniciar_juego(dificultad):
 
 # -------------------------------
 def iniciar_ventana_inicio():
-    reproducir_musica("Imagenes/musica.mp3")
+
+    #En caso de error, cambiar "\" por "/"
+    
+    reproducir_musica("Imagenes\musica.mp3") 
     root = tk.Tk()
     root.geometry("700x500")
 
