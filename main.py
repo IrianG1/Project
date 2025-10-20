@@ -5,14 +5,14 @@ import random
 
 import os
 
-import pygame
+import pygame#librería para poder ponerle música 
 
 pygame.mixer.init()
 
 def reproducir_musica(ruta, volumen=0.5):
     pygame.mixer.music.load(ruta)
     pygame.mixer.music.set_volume(volumen)
-    pygame.mixer.music.play(-1)  # -1 = en bucle
+    pygame.mixer.music.play(-1)  # -1 = la música se reproduce en bucle
 
 # Configuración
 #tamaño de cada carta
@@ -359,12 +359,12 @@ def iniciar_ventana_inicio():
     canvas = tk.Canvas(root, width=700, height=500)
     canvas.pack(fill="both", expand=True)
 
-    # --- Fondo ---
+    # imagen de fondo
     fondo_img = Image.open("Imagenes/3.png").resize((700, 500))
     fondo_tk = ImageTk.PhotoImage(fondo_img)
     canvas.create_image(0, 0, image=fondo_tk, anchor="nw")
 
-    # --- Botones ---
+    # imagen de botones
     img_facil = Image.open("Imagenes/facil.png").resize((200, 50))
     img_normal = Image.open("Imagenes/normal.png").resize((200, 50))
     img_dificil = Image.open("Imagenes/dificil.png").resize((200, 50))
@@ -376,11 +376,11 @@ def iniciar_ventana_inicio():
     # Guardar referencias para que no se borren
     canvas.btn_imgs = [fondo_tk, btn_img, btn_img1, btn_img2]
 
-    # --- Funciones específicas ---
+    # Funcion para cada botón
     def jugar_facil(event=None):
         print("Iniciar modo FÁCIL")
         root.destroy()
-        iniciar_juego("Fácil")# aquí pondrías tu función para iniciar ese modo
+        iniciar_juego("Fácil")
 
     def jugar_medio(event=None):
         print("Iniciar modo NORMAL")
@@ -392,12 +392,12 @@ def iniciar_ventana_inicio():
         root.destroy()
         iniciar_juego("Difícil")
 
-    # --- Crear botones sobre el canvas ---
+    # poner las imagenes de los botones sobre el fondo
     boton_facil = canvas.create_image(350, 290, image=btn_img)
     boton_normal = canvas.create_image(350, 350, image=btn_img1)
     boton_dificil = canvas.create_image(350, 410, image=btn_img2)
 
-    # --- Vincular eventos correctamente ---
+    # Vincular a funciones
     canvas.tag_bind(boton_facil, "<Button-1>", jugar_facil)
     canvas.tag_bind(boton_normal, "<Button-1>", jugar_medio)
     canvas.tag_bind(boton_dificil, "<Button-1>", jugar_dificil)
