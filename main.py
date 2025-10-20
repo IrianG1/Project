@@ -320,9 +320,9 @@ def iniciar_juego(dificultad):
         tk.Label(final, text = f"Intentos: {intentos[0]}",font = ("Arial", 16), fg = "white", bg = "#222222").pack(pady = 5)
         tk.Label(final, text = msg, font = ("Arial", 16, "italic"), fg = "#00FF00", bg = "#222222").pack(pady = 10)
 
-        tk.Button(final, text = "Jugar otra vez", font = ("Arial", 14), bg = "#28a745", fg = "white",
+        tk.Button(final, text = "Jugar otra vez", font = ("Arial", 14), bg = "#28a745", fg = "black",
                   command = lambda: [final.destroy(), juego.destroy(),iniciar_ventana_inicio()]).pack(pady = 10)
-        tk.Button(final, text = "Salir", font = ("Arial", 14), bg = "#FF0000", fg = "white",
+        tk.Button(final, text = "Salir", font = ("Arial", 14), bg = "#FF0000", fg = "black",
                   command = lambda: [final.destroy(), juego.destroy()]).pack(pady = 10)
 
         def closing():
@@ -344,7 +344,7 @@ def iniciar_juego(dificultad):
 
 # -------------------------------
 def iniciar_ventana_inicio():
-    reproducir_musica("Imagenes\musica.mp3")
+    reproducir_musica("Imagenes/musica.mp3")
     root = tk.Tk()
     root.geometry("700x500")
 
